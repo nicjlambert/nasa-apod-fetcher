@@ -1,35 +1,41 @@
-// This script retrieves the Astronomy Picture of the Day (APOD) from the NASA API.
-// API Key and Date are used as parameters for the request.
+// Get the API key securely
+let api_key = key,
 
+// Define a function to get APOD for a given date
+GetAPOD = (date as date) as table =>
 let
-
-    // Defining API key
-    api_key = "xn3EK1sh7Pg5SWz9RDWIb4KnInS75tsDucgGe5OL",
-    
-    // Getting today's date in "YYYY-MM-DD" format
-    date = Date.ToText(DateTime.Date(DateTime.LocalNow()), "YYYY-MM-DD"),
-
-    // Defining base URL for the API
+    // API base URL
     BaseUrl = "https://api.nasa.gov/",
     
-    // Defining RelativePath and Query parameters for the API
+    // Define API path and parameters
     Options = [
         RelativePath = "planetary/apod?",
         Query = [
             api_key = api_key, 
-            date = date
+            date = Date.ToText(date, "YYYY-MM-DD")
         ]
     ],
+    
+    // Try to get data from API
+    JsonResponse = try Web.Contents(BaseUrl, Options) otherwise null,
 
-    // Making a GET request to the API and storing the JSON response
-    JsonResponse = Web.Contents(BaseUrl, Options),
+    // If API response is null, throw connection error
+    // Otherwise, try to parse JSON response or throw parsing error
+    Source = if JsonResponse = null then error "Failed to connect to the API." 
+             else try Json.Document(JsonResponse) otherwise error "Failed to parse the API response.",
 
-    // Error handling for failed API call
-    Source = try Json.Document(JsonResponse) otherwise error "Failed to retrieve data from the API.",
-
-    // Converting the returned record into a table
+    // Convert JSON record to table
     TableFromSource = Record.ToTable(Source)
-
+    
 in
-    // Returning the final table
-    TableFromSource
+    // Return the table
+    TableFromSource,
+
+// Get today's date
+Today = DateTime.Date(DateTime.LocalNow()),
+
+// Call GetAPOD function with today's date
+APOD_Today = GetAPOD(Today)
+
+// Return today's APOD
+in APOD_Today
